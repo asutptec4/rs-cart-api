@@ -1,28 +1,27 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { Repository } from 'typeorm';
 
-import { v4 } from 'uuid';
-
-import { User } from '../models';
+import { User } from '../../database/entities/user.entity';
 
 @Injectable()
 export class UsersService {
-  private readonly users: Record<string, User>;
+  constructor(
+    @Inject('USER_REPOSITORY')
+    private userRepository: Repository<User>,
+  ) {}
 
-  constructor() {
-    this.users = {}
+  findOne(name: string): Promise<User> {
+    return this.userRepository.findOne({ where: { name: name }});
   }
 
-  findOne(userId: string): User {
-    return this.users[ userId ];
+  createOne({
+    name,
+    password,
+  }: {
+    name: string;
+    password: string;
+  }): Promise<User> {
+    const user = this.userRepository.create({ name, password });
+    return this.userRepository.save(user);
   }
-
-  createOne({ name, password }: User): User {
-    const id = v4(v4());
-    const newUser = { id: name || id, name, password };
-
-    this.users[ id ] = newUser;
-
-    return newUser;
-  }
-
 }
