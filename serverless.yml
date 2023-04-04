@@ -42,7 +42,7 @@ package:
     - 'cart-service.js'
     - 'package.json'
 # Resources:
-#   SongsDatabase:
+#   CartServiceDatabase:
 #     Type: AWS::RDS::DBInstance
 #     Properties:
 #       AllocatedStorage: 20
