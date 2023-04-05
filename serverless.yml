@@ -1,0 +1,62 @@
+service: cart-service
+
+frameworkVersion: '3'
+
+plugins:
+  - serverless-dotenv-plugin
+  - serverless-offline
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  region: eu-west-1
+  stage: dev
+  profile: default
+  environment:
+    ENV_STAGE: ${self:provider.stage}
+  iam:
+    role:
+      statements:
+        - Effect: 'Allow'
+          Action:
+            - 'ec2:CreateNetworkInterface'
+            - 'ec2:DescribeNetworkInterfaces'
+            - 'ec2:DeleteNetworkInterface'
+            - 'ec2:AssignPrivateIpAddresses'
+            - 'ec2:UnassignPrivateIpAddresses'
+          Resource: '*'
+
+functions:
+  main:
+    handler: cart-service.handler
+    events:
+      - http:
+          method: any
+          path: /{proxy+}
+
+package:
+  patterns:
+    - '!**'
+    - 'node_modules/@nestjs/**'
+    - 'node_modules/pg/**'
+    - 'cart-service.js'
+    - 'package.json'
+# Resources:
+#   CartServiceDatabase:
+#     Type: AWS::RDS::DBInstance
+#     Properties:
+#       AllocatedStorage: 20
+#       DBInstanceClass: db.t3.micro
+#       DBInstanceIdentifier: cart-service-db
+#       DBName: ${env:DB_DATABASE}
+#       PubliclyAccessible: true
+#       StorageType: gp2
+#       MasterUsername: ${env:DB_USER}
+#       MasterUserPassword: ${env:DB_PASSWORD}
+#       Engine: postgres
+#       EngineVersion: 14.6
+#       BackupRetentionPeriod: 0
+#       VPCSecurityGroups:
+#       - !GetAtt #add
+#       DBSubnetGroupName:
+#         Ref: #add

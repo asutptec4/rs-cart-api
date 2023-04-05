@@ -1,39 +1,58 @@
-import { Injectable } from '@nestjs/common';
-import { v4 } from 'uuid';
+import { Inject, Injectable } from '@nestjs/common';
+import { Repository } from 'typeorm';
 
-import { Order } from '../models';
+import { Cart, Order } from '../../database/entities';
+import { CreateOrderDto, StatusUpdateDto } from '../models';
 
 @Injectable()
 export class OrderService {
-  private orders: Record<string, Order> = {}
+  constructor(
+    @Inject('ORDER_REPOSITORY')
+    private orderRepository: Repository<Order>,
+    @Inject('CART_REPOSITORY')
+    private cartRepository: Repository<Cart>,
+  ) {}
 
-  findById(orderId: string): Order {
-    return this.orders[ orderId ];
+  findById(orderId: string): Promise<Order> {
+    return this.orderRepository.findOneBy({ id: orderId });
   }
 
-  create(data: any) {
-    const id = v4(v4())
-    const order = {
-      ...data,
-      id,
-      status: 'inProgress',
-    };
-
-    this.orders[ id ] = order;
-
-    return order;
+  async create(data: CreateOrderDto, userId: string): Promise<Order> {
+    let savedOrder;
+    await this.orderRepository.manager.transaction(async (transactionManager) => {
+      const cart = await this.cartRepository.findOneBy({
+        userId,
+        status: 'OPEN',
+      });
+      const order = this.orderRepository.create({
+        userId,
+        cartId: cart.id,
+        payment: {},
+        delivery: data.address,
+        status: 'OPEN',
+        total: data.items.reduce(
+          (acc, item) => (acc += item.count * item.price),
+          0,
+        ),
+      });
+      cart.status = 'ORDERED';
+      await transactionManager.save(cart);
+      savedOrder = await transactionManager.save(order);
+    });
+    return savedOrder;
   }
 
-  update(orderId, data) {
-    const order = this.findById(orderId);
+  findAll(): Promise<Order[]> {
+    return this.orderRepository.find();
+  }
 
-    if (!order) {
-      throw new Error('Order does not exist.');
-    }
+  async updateStatus(id: string, status: StatusUpdateDto): Promise<Order> {
+    const order = await this.orderRepository.findOneBy({ id });
+    order.status = status.status;
+    return this.orderRepository.save(order);
+  }
 
-    this.orders[ orderId ] = {
-      ...data,
-      id: orderId,
-    }
+  remove(id: string): Promise<any> {
+    return this.orderRepository.delete({ id });
   }
 }
