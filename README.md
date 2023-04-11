@@ -47,6 +47,11 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
+## Running the app container
+```bash
+$ docker run -dp 8080:8080 --rm --env-file .env rscartapi:latest
+```
+
 ## Test
 
 ```bash
