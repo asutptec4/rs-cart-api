@@ -1,0 +1,8 @@
+.*
+db
+dist
+node_modules
+test
+cart-service.js
+Dockerfile
+serverless.yml
